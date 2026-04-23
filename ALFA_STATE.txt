@@ -1,0 +1,7 @@
+STAN ALFA - 2026-04-22
+Liczba linii: 1618
+Wszystkie błędy krytyczne naprawione.
+Model AI: gemini-3.1-flash-lite-preview
+Audio: 16kHz downsampled
+UI: Get Answer / Manual Input fixed.
+Shutdown: Clean.

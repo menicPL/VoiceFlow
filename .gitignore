@@ -1,0 +1,12 @@
+# .gitignore for .NET / WPF
+[Bb]in/
+[Oo]bj/
+publish/
+publish_BETA/
+*.user
+*.userosscache
+*.sln.docstates
+.env
+google_creds.json
+logs/
+*.log
