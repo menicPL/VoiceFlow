@@ -5,6 +5,7 @@
         Title="VoiceFlow AI" Height="650" Width="700"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" WindowStartupLocation="CenterScreen"
+        Icon="icon.png"
         MouseLeftButtonDown="Window_MouseLeftButtonDown">
 
     <Window.Resources>
@@ -13,6 +14,100 @@
                            CornerRadius="20"
                            GlassFrameThickness="0"
                            ResizeBorderThickness="8"/>
+
+        <!-- Animations -->
+        <Storyboard x:Key="ShowSettings">
+            <DoubleAnimation Storyboard.TargetName="SettingsPanel" Storyboard.TargetProperty="Opacity" From="0" To="1" Duration="0:0:0.3"/>
+            <DoubleAnimation Storyboard.TargetName="SettingsPanelScale" Storyboard.TargetProperty="ScaleX" From="0.9" To="1.0" Duration="0:0:0.3">
+                <DoubleAnimation.EasingFunction><CircleEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="SettingsPanelScale" Storyboard.TargetProperty="ScaleY" From="0.9" To="1.0" Duration="0:0:0.3">
+                <DoubleAnimation.EasingFunction><CircleEase EasingMode="EaseOut"/></DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+        </Storyboard>
+
+        <Storyboard x:Key="HideSettings">
+            <DoubleAnimation Storyboard.TargetName="SettingsPanel" Storyboard.TargetProperty="Opacity" From="1" To="0" Duration="0:0:0.2"/>
+        </Storyboard>
+
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#1A1A2E"/>
+            <Setter Property="Foreground" Value="#e2e8f0"/>
+            <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton x:Name="ToggleButton" 
+                                        BorderBrush="{TemplateBinding BorderBrush}" 
+                                        Background="{TemplateBinding Background}" 
+                                        Foreground="{TemplateBinding Foreground}"
+                                        Grid.Column="2" Focusable="false"
+                                        IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}"
+                                        ClickMode="Press">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border x:Name="Border" 
+                                                CornerRadius="5" 
+                                                Background="{TemplateBinding Background}"
+                                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                                BorderThickness="1">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition />
+                                                    <ColumnDefinition Width="20" />
+                                                </Grid.ColumnDefinitions>
+                                                <Path x:Name="Arrow" Grid.Column="1" Fill="#64748b" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M 0 0 L 4 4 L 8 0 Z"/>
+                                            </Grid>
+                                        </Border>
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter x:Name="ContentSite" IsHitTestVisible="False" 
+                                            Content="{TemplateBinding SelectionBoxItem}"
+                                            ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                            ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                            Margin="10,3,23,3" VerticalAlignment="Center" HorizontalAlignment="Left" />
+                            <Popup x:Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                <Grid x:Name="DropDown" SnapsToDevicePixels="True" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder" Background="#0F0F14" BorderThickness="1" BorderBrush="#33FFFFFF" CornerRadius="5"/>
+                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="#0F0F14"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderThickness="0" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1A1A2E"/>
+                                <Setter Property="Foreground" Value="Orange"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2D2D4D"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     
     <shell:WindowChrome.WindowChrome>
@@ -20,10 +115,13 @@
     </shell:WindowChrome.WindowChrome>
 
     <Border CornerRadius="20" BorderThickness="1" BorderBrush="#33FFFFFF">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="30" Color="Black" Opacity="0.5" ShadowDepth="0"/>
+        </Border.Effect>
         <Border.Background>
             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                <GradientStop Color="#F20F0F14" Offset="0"/>
-                <GradientStop Color="#F21A1A2E" Offset="1"/>
+                <GradientStop Color="#FB0F0F14" Offset="0"/>
+                <GradientStop Color="#FB1E1E3F" Offset="1"/>
             </LinearGradientBrush>
         </Border.Background>
 
@@ -36,9 +134,20 @@
 
             <!-- Header -->
             <Grid Grid.Row="0">
-                <TextBlock Text="✨ VoiceFlow AI" FontSize="20" FontWeight="Bold" Foreground="#60a5fa" FontFamily="Segoe UI Semibold" VerticalAlignment="Center"/>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="✨ VoiceFlow AI" FontSize="20" FontWeight="Bold" Foreground="#60a5fa" FontFamily="Segoe UI Semibold"/>
+                    <Ellipse x:Name="AiStatusIndicator" Width="8" Height="8" Fill="#44FFFFFF" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <Ellipse.ToolTip>AI Status</Ellipse.ToolTip>
+                    </Ellipse>
+                </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                     <Button Content="🗑 Clear" Click="Clear_Click" Background="#33FFFFFF" Foreground="#CCC" BorderThickness="0" 
+                            Padding="10,4" Margin="0,0,10,0" Cursor="Hand" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                        <Button.Resources>
+                            <Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style>
+                        </Button.Resources>
+                    </Button>
+                    <Button Content="⚙" Click="Settings_Click" Background="#33FFFFFF" Foreground="#CCC" BorderThickness="0" 
                             Padding="10,4" Margin="0,0,10,0" Cursor="Hand" shell:WindowChrome.IsHitTestVisibleInChrome="True">
                         <Button.Resources>
                             <Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style>
@@ -67,49 +176,24 @@
             <StackPanel Grid.Row="2">
                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,15">
                     <TextBlock Text="Input:" Foreground="#94a3b8" FontSize="12" VerticalAlignment="Center"/>
-                    <ComboBox x:Name="DeviceComboBox" Width="200" Margin="5,0,0,0"
-                              Background="#1A1A2E" Foreground="#e2e8f0" 
-                              FontSize="12" BorderThickness="1" BorderBrush="#33FFFFFF">
-                        <ComboBox.Resources>
-                            <Style TargetType="ComboBoxItem">
-                                <Setter Property="Background" Value="#0F0F14"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Padding" Value="8,4"/>
-                            </Style>
-                        </ComboBox.Resources>
-                    </ComboBox>
+                    <ComboBox x:Name="DeviceComboBox" Width="200" Margin="5,0,0,0"/>
 
                     <CheckBox x:Name="MixMicCheckBox" Content="Mix Mic:" Foreground="#94a3b8" VerticalAlignment="Center" Margin="12,0,5,0" 
                               Checked="MixMicCheckBox_Changed" Unchecked="MixMicCheckBox_Changed"/>
-                    <ComboBox x:Name="MicComboBox" Width="160" IsEnabled="False"
-                              Background="#1A1A2E" Foreground="#e2e8f0" 
-                              FontSize="12" BorderThickness="1" BorderBrush="#33FFFFFF">
-                        <ComboBox.Resources>
-                            <Style TargetType="ComboBoxItem">
-                                <Setter Property="Background" Value="#0F0F14"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Padding" Value="8,4"/>
-                            </Style>
-                        </ComboBox.Resources>
-                    </ComboBox>
+                    <ComboBox x:Name="MicComboBox" Width="160" IsEnabled="False"/>
 
                     <TextBlock Text="Lang:" Foreground="#94a3b8" FontSize="12" VerticalAlignment="Center" Margin="12,0,5,0"/>
-                    <ComboBox x:Name="LanguageComboBox" Width="55" 
-                              Background="#1A1A2E" Foreground="#e2e8f0" 
-                              FontSize="12" BorderThickness="1" BorderBrush="#33FFFFFF">
-                        <ComboBox.Resources>
-                            <Style TargetType="ComboBoxItem">
-                                <Setter Property="Background" Value="#0F0F14"/>
-                                <Setter Property="Foreground" Value="White"/>
-                                <Setter Property="Padding" Value="8,4"/>
-                            </Style>
-                        </ComboBox.Resources>
+                    <ComboBox x:Name="LanguageComboBox" Width="55" Margin="5,0,0,0">
                         <ComboBoxItem Content="PL" IsSelected="True" Tag="pl-PL"/>
                         <ComboBoxItem Content="EN" Tag="en-US"/>
                     </ComboBox>
 
-                    <ProgressBar x:Name="VolumeBar" Width="50" Height="15" Minimum="0" Maximum="100" Value="0" 
-                                 Margin="12,0,0,0" Background="#0F0F14" Foreground="#22C55E" BorderThickness="0" />
+                    <ProgressBar x:Name="VolumeBar" Width="50" Height="10" Minimum="0" Maximum="100" Value="0" 
+                                 Margin="12,0,0,0" Background="#111" Foreground="#3B82F6" BorderThickness="0">
+                        <ProgressBar.Resources>
+                            <Style TargetType="Border"><Setter Property="CornerRadius" Value="5"/></Style>
+                        </ProgressBar.Resources>
+                    </ProgressBar>
                 </StackPanel>
 
                 
@@ -208,6 +292,59 @@
                 
                 <TextBlock x:Name="StatusLabel" Text="Ready to listen" Foreground="#64748b" FontSize="12" HorizontalAlignment="Center" Margin="0,8,0,0"/>
             </StackPanel>
+
+            <!-- Settings Overlay -->
+            <Grid x:Name="SettingsOverlay" Grid.Row="0" Grid.RowSpan="3" Visibility="Collapsed">
+                <Grid.Background>
+                    <SolidColorBrush Color="#AA000000"/>
+                </Grid.Background>
+                
+                <Border x:Name="SettingsPanel" Width="450" Height="480" Background="#1E1E2E" CornerRadius="15" BorderBrush="#44FFFFFF" BorderThickness="1" VerticalAlignment="Center" HorizontalAlignment="Center">
+                    <Border.RenderTransform>
+                        <ScaleTransform x:Name="SettingsPanelScale" CenterX="225" CenterY="240"/>
+                    </Border.RenderTransform>
+                    <Grid Margin="25">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Text="Settings" FontSize="22" FontWeight="Bold" Foreground="White" Margin="0,0,0,20"/>
+                        
+                        <StackPanel Grid.Row="1">
+                            <TextBlock Text="Gemini API Key" Foreground="#94a3b8" Margin="0,0,0,5"/>
+                            <PasswordBox x:Name="SettingsGeminiKey" Background="#0F0F14" Foreground="White" BorderBrush="#33FFFFFF" Padding="8" Margin="0,0,0,15"/>
+                            
+                            <TextBlock Text="Google Credentials Path (JSON)" Foreground="#94a3b8" Margin="0,0,0,5"/>
+                            <TextBox x:Name="SettingsGooglePath" Background="#0F0F14" Foreground="White" BorderBrush="#33FFFFFF" Padding="8" Margin="0,0,0,15"/>
+                            
+                            <TextBlock Text="AI Model" Foreground="#94a3b8" Margin="0,0,0,5"/>
+                            <ComboBox x:Name="SettingsModel" Margin="0,0,0,15">
+                                <ComboBoxItem Content="gemini-1.5-flash" IsSelected="True"/>
+                                <ComboBoxItem Content="gemini-1.5-pro"/>
+                                <ComboBoxItem Content="gemini-2.0-flash-exp"/>
+                                <ComboBoxItem Content="gemini-3.1-flash-lite-preview"/>
+                            </ComboBox>
+
+                            <TextBlock Text="Chat Font Size" Foreground="#94a3b8" Margin="0,0,0,5"/>
+                            <Slider x:Name="SettingsFontSize" Minimum="10" Maximum="24" Value="13" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,0,5"/>
+                            <TextBlock Text="{Binding Value, ElementName=SettingsFontSize}" Foreground="#60a5fa" HorizontalAlignment="Right" Margin="0,0,0,15"/>
+                            
+                            <CheckBox x:Name="SettingsTopmost" Content="Always on top" Foreground="White" IsChecked="True" Margin="0,10,0,0"/>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                            <Button Content="Cancel" Click="SettingsCancel_Click" Width="80" Height="35" Background="Transparent" Foreground="#AAA" BorderThickness="0" Margin="0,0,10,0"/>
+                            <Button Content="Save" Click="SettingsSave_Click" Width="100" Height="35" Background="#2563eb" Foreground="White" BorderThickness="0">
+                                <Button.Resources>
+                                    <Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style>
+                                </Button.Resources>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
     </Border>
 </Window>

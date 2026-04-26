@@ -12,17 +12,19 @@ namespace VoiceFlowCS
     public class AiService
     {
         private readonly string _apiKey;
+        private readonly string _modelName;
         private readonly HttpClient _httpClient;
 
-        public AiService(string apiKey)
+        public AiService(string apiKey, string modelName = "gemini-3.1-flash-lite-preview")
         {
             _apiKey = apiKey;
+            _modelName = modelName;
             _httpClient = new HttpClient();
         }
 
         public async System.Collections.Generic.IAsyncEnumerable<string> GetResponseStreamAsync(string userText)
         {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:streamGenerateContent?alt=sse&key={_apiKey}";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_modelName}:streamGenerateContent?alt=sse&key={_apiKey}";
             Log.Debug("AI Stream URL: {Url}", url.Replace(_apiKey, "HIDDEN"));
             Log.Information("AI Query: {Query}", userText);
 

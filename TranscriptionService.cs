@@ -129,6 +129,10 @@ namespace VoiceFlowCS
             {
                 Log.Debug("STT receive loop canceled.");
             }
+            catch (Grpc.Core.RpcException ex) when (ex.StatusCode == Grpc.Core.StatusCode.Cancelled)
+            {
+                Log.Debug("STT gRPC call canceled.");
+            }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error in STT receive loop");

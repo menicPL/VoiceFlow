@@ -3,10 +3,12 @@
 [Oo]bj/
 publish/
 publish_BETA/
+publish_v1_0/
 *.user
 *.userosscache
 *.sln.docstates
 .env
 google_creds.json
+settings.json
 logs/
 *.log

@@ -1,36 +1,38 @@
-# 🎤 VoiceFlow: Instrukcja Instalacji (PL)
+# 🎤 VoiceFlow AI v1.0: Instrukcja Instalacji (PL)
 
-Aplikacja jest gotowa. Możesz ją uruchomić bezpośrednio plikiem **VoiceFlow.exe**. Aby jednak działała transkrypcja, potrzebujesz klucza od Google Cloud (polskie menu).
+Aplikacja VoiceFlow AI (wersja C#/.NET 8) jest gotowa do użycia. Możesz ją uruchomić bezpośrednio plikiem **VoiceFlowCS.exe**.
 
-## 1. Uzyskanie klucza Google Cloud (po polsku)
+## 1. Konfiguracja Google Cloud (STT)
+
+Aby aplikacja mogła rozpoznawać Twój głos (Real-time Speech-to-Text), potrzebujesz klucza JSON:
 
 1. Wejdź na [Google Cloud Console](https://console.cloud.google.com/).
-2. Na górnym pasku wybierz lub utwórz nowy **Projekt**.
-3. W menu po lewej wybierz **"Interfejsy API i usługi"** -> **"Biblioteka"**.
-4. Wyszukaj i włącz: **"Cloud Speech-to-Text API"**.
-5. Wróć do menu i wybierz **"Interfejsy API i usługi"** -> **"Dane uwierzytelniające"**.
-6. Kliknij na górze **"+ UTWÓRZ DANE UWIERZYTELNIAJĄCE"** i wybierz **"Konto usługi"**.
-7. Po utworzeniu konta, kliknij w jego adres e-mail na liście.
-8. Przejdź do zakładki **"Klucze"** (na górze).
-9. Kliknij **"Dodaj klucz"** -> **"Utwórz nowy klucz"** -> wybierz format **JSON**.
-10. Pobrany plik nazwij `google_creds.json` i wrzuć go do folderu z aplikacją VoiceFlow.
+2. Utwórz projekt i włącz **"Cloud Speech-to-Text API"**.
+3. Utwórz **"Konto usługi"** (Service Account) w zakładce "Dane uwierzytelniające".
+4. Dodaj klucz w formacie **JSON**, pobierz go i nazwij `google_creds.json`.
+5. Umieść plik w głównym folderze aplikacji (obok .exe) lub wskaż jego ścieżkę w **Ustawieniach** aplikacji.
 
 ## 2. Klucz Gemini AI (Dla odpowiedzi AI)
 
-Aplikacja teraz nie tylko spisuje tekst, ale też na niego odpowiada! Potrzebujesz do tego darmowego klucza Gemini:
-1. Wejdź na [Google AI Studio](https://aistudio.google.com/).
+Aplikacja wykorzystuje model Gemini do generowania odpowiedzi:
+
+1. Pobierz darmowy klucz API z [Google AI Studio](https://aistudio.google.com/).
 2. Kliknij **"Get API key"**.
-3. Skopiuj klucz i wklej go do pliku `.env` w folderze aplikacji:
+3. Skopiuj klucz i wklej go w aplikacji w menu **Ustawienia** (ikona ⚙️) lub utwórz plik `.env`:
    `GEMINI_API_KEY=TWOJ_KLUCZ_TUTAJ`
 
-## 3. Uruchomienie
+## 3. Co nowego w v1.0?
 
-1. Upewnij się, że pliki `google_creds.json` oraz `.env` są w folderze.
-2. Odpal **VoiceFlow.exe** (lub `python main.py`).
-3. Zobaczysz pasek głośności (**Loudness Bar**) - to znak, że aplikacja słucha!
-4. Po zakończeniu Twojej wypowiedzi, Gemini automatycznie odpowie.
+*   **Trwałość (Persistence)**: Aplikacja zapamiętuje wybrane urządzenie, język, klucze API oraz historię czatu.
+*   **Menu Ustawień (Settings)**: Możesz teraz łatwo konfigurować klucze, zmieniać wielkość czcionki oraz wybierać model Gemini (np. Flash lub Pro).
+*   **Wielojęzyczność**: Przełącznik PL/EN poprawia celność rozpoznawania mowy w zależności od kontekstu.
+*   **Manual Query**: Możesz wpisywać pytania ręcznie w dolnym polu tekstowym.
 
-### Rozwiązywanie problemów:
-- **Brak odpowiedzi AI?** Sprawdź czy klucz w `.env` jest poprawny.
-- **Pasek głośności się nie rusza?** Upewnij się, że wybrałeś poprawne urządzenie wejściowe ("Device").
-- **Błąd biblioteki?** Jeśli uruchamiasz wersję skryptową, zainstaluj zależności: `pip install -r requirements.txt`.
+## 4. Rozwiązywanie problemów:
+
+- **Nie słyszy?** Wybierz poprawne urządzenie "Input". Jeśli chcesz słuchać dźwięku z komputera (np. ze spotkania Teams), wybierz urządzenie oznaczone jako `[LOOPBACK]`.
+- **Błąd API?** Sprawdź w Ustawieniach czy klucze są poprawne i czy plik JSON istnieje w podanej ścieżce.
+- **Interfejs**: Aplikacja jest "Always on Top" (zawsze na wierzchu), co można wyłączyć w ustawieniach.
+
+---
+*Projekt rozwijany w C# (WPF .NET 8).*

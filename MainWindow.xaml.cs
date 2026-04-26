@@ -18,7 +18,8 @@ namespace VoiceFlowCS
     {
         private readonly AudioService _audioService;
         private readonly TranscriptionService _transcriptionService;
-        private readonly AiService _aiService;
+        private AiService _aiService;
+        private readonly SettingsService _settingsService;
         private bool _isActive;
 
         private readonly StringBuilder _sessionText = new StringBuilder();
@@ -47,23 +48,78 @@ namespace VoiceFlowCS
                 Log.Warning(".env file not found at {Path}. Environment variables may be missing.", envPath);
             }
             
+            _settingsService = new SettingsService();
             _audioService = new AudioService();
             _transcriptionService = new TranscriptionService();
-            var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+
+            var apiKey = _settingsService.Settings.GeminiApiKey;
             if (string.IsNullOrEmpty(apiKey))
             {
-                AppendText("Warning: GEMINI_API_KEY not found in .env. AI features will be disabled.", Brushes.Orange);
-                _aiService = null!; // Or handle gracefully
+                apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
+            }
+
+            if (string.IsNullOrEmpty(apiKey))
+            {
+                AppendText("Warning: GEMINI_API_KEY not found. AI features will be disabled.", Brushes.Orange, false);
+                _aiService = null!;
             }
             else
             {
-                _aiService = new AiService(apiKey);
+                _aiService = new AiService(apiKey, _settingsService.Settings.ModelName);
             }
 
             LoadDevices();
+            ApplySettings();
+            LoadChatHistory();
             
             _audioService.VolumeUpdated += (s, vol) => Dispatcher.BeginInvoke(new Action(() => VolumeBar.Value = vol));
             _transcriptionService.TranscriptReceived += OnTranscriptReceived;
+        }
+
+        private void ApplySettings()
+        {
+            var settings = _settingsService.Settings;
+            
+            // Language
+            foreach (ComboBoxItem item in LanguageComboBox.Items)
+            {
+                if (item.Tag?.ToString() == settings.DefaultLanguage)
+                {
+                    LanguageComboBox.SelectedItem = item;
+                    break;
+                }
+            }
+
+            // Mix Mic
+            MixMicCheckBox.IsChecked = settings.MixMic;
+            MicComboBox.IsEnabled = settings.MixMic;
+
+            // UI Preferences
+            TranscriptBox.FontSize = settings.FontSize;
+            this.Topmost = settings.Topmost;
+            SettingsFontSize.Value = settings.FontSize;
+            SettingsTopmost.IsChecked = settings.Topmost;
+            SettingsGooglePath.Text = settings.GoogleCredsPath;
+            SettingsGeminiKey.Password = settings.GeminiApiKey;
+
+            // Model selection
+            foreach (ComboBoxItem item in SettingsModel.Items)
+            {
+                if (item.Content?.ToString() == settings.ModelName)
+                {
+                    SettingsModel.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+
+        private void LoadChatHistory()
+        {
+            foreach (var msg in _settingsService.Settings.ChatHistory)
+            {
+                var brush = (Brush)new BrushConverter().ConvertFromString(msg.Color) ?? Brushes.Gray;
+                AppendText($"{msg.Role}: {msg.Content}", brush, false);
+            }
         }
 
         private void LoadDevices()
@@ -72,15 +128,36 @@ namespace VoiceFlowCS
             DeviceComboBox.ItemsSource = devices;
             DeviceComboBox.DisplayMemberPath = "Name";
 
-            // Select the 3rd loopback device by default (index 2), fallback to 1st
-            var loopbackDevices = devices.Where(d => d.IsLoopback).ToList();
-            var defaultDevice = loopbackDevices.Count >= 3 ? loopbackDevices[2] : loopbackDevices.FirstOrDefault();
-            DeviceComboBox.SelectedItem = defaultDevice ?? (devices.Count > 0 ? devices[0] : null);
+            // Select the device from settings or 3rd loopback default
+            var savedDeviceId = _settingsService.Settings.SelectedDeviceId;
+            var savedMicId = _settingsService.Settings.SelectedMicId;
+
+            if (!string.IsNullOrEmpty(savedDeviceId))
+            {
+                var device = devices.FirstOrDefault(d => d.Id == savedDeviceId);
+                if (device != null) DeviceComboBox.SelectedItem = device;
+            }
+
+            if (DeviceComboBox.SelectedItem == null)
+            {
+                var loopbackDevices = devices.Where(d => d.IsLoopback).ToList();
+                var defaultDevice = loopbackDevices.Count >= 3 ? loopbackDevices[2] : loopbackDevices.FirstOrDefault();
+                DeviceComboBox.SelectedItem = defaultDevice ?? (devices.Count > 0 ? devices[0] : null);
+            }
 
             // Separate list for Mic selection
-            MicComboBox.ItemsSource = devices.Where(d => !d.IsLoopback).ToList();
+            var mics = devices.Where(d => !d.IsLoopback).ToList();
+            MicComboBox.ItemsSource = mics;
             MicComboBox.DisplayMemberPath = "Name";
-            if (MicComboBox.Items.Count > 0) MicComboBox.SelectedIndex = 0;
+
+            if (!string.IsNullOrEmpty(savedMicId))
+            {
+                var mic = mics.FirstOrDefault(d => d.Id == savedMicId);
+                if (mic != null) MicComboBox.SelectedItem = mic;
+            }
+            
+            if (MicComboBox.SelectedItem == null && MicComboBox.Items.Count > 0) 
+                MicComboBox.SelectedIndex = 0;
         }
 
         private void MixMicCheckBox_Changed(object sender, RoutedEventArgs e)
@@ -119,6 +196,50 @@ namespace VoiceFlowCS
             }
         }
 
+        private void Settings_Click(object sender, RoutedEventArgs e)
+        {
+            SettingsGeminiKey.Password = _settingsService.Settings.GeminiApiKey;
+            SettingsGooglePath.Text = _settingsService.Settings.GoogleCredsPath;
+            SettingsFontSize.Value = _settingsService.Settings.FontSize;
+            SettingsTopmost.IsChecked = _settingsService.Settings.Topmost;
+            
+            SettingsOverlay.Visibility = Visibility.Visible;
+            var sb = (System.Windows.Media.Animation.Storyboard)FindResource("ShowSettings");
+            sb.Begin();
+        }
+
+        private async void SettingsCancel_Click(object sender, RoutedEventArgs e)
+        {
+            var sb = (System.Windows.Media.Animation.Storyboard)FindResource("HideSettings");
+            sb.Begin();
+            await Task.Delay(200);
+            SettingsOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private async void SettingsSave_Click(object sender, RoutedEventArgs e)
+        {
+            var settings = _settingsService.Settings;
+            settings.GeminiApiKey = SettingsGeminiKey.Password;
+            settings.GoogleCredsPath = SettingsGooglePath.Text;
+            settings.ModelName = (SettingsModel.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "gemini-2.0-flash";
+            settings.FontSize = SettingsFontSize.Value;
+            settings.Topmost = SettingsTopmost.IsChecked == true;
+
+            _settingsService.SaveSettings();
+            ApplySettings();
+            
+            var sb = (System.Windows.Media.Animation.Storyboard)FindResource("HideSettings");
+            sb.Begin();
+            await Task.Delay(200);
+            SettingsOverlay.Visibility = Visibility.Collapsed;
+            
+            // Re-initialize AI Service
+            if (!string.IsNullOrEmpty(settings.GeminiApiKey))
+            {
+                _aiService = new AiService(settings.GeminiApiKey, settings.ModelName);
+            }
+        }
+
         private bool _isProcessing;
         private async void ToggleSession_Click(object sender, RoutedEventArgs e)
         {
@@ -138,13 +259,14 @@ namespace VoiceFlowCS
 
                     Log.Information("Starting session with device: {Name} (ID: {Id})", selectedDevice.Name, selectedDevice.Id);
 
-                    string creds = "google_creds.json";
-                    if (!File.Exists(creds)) creds = "../google_creds.json";
+                    string creds = _settingsService.Settings.GoogleCredsPath;
+                    if (string.IsNullOrEmpty(creds)) creds = "google_creds.json";
+                    if (!File.Exists(creds)) creds = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, creds);
 
                     if (!File.Exists(creds))
                     {
                         Log.Error("Credentials file not found at {Path}", Path.GetFullPath(creds));
-                        AppendText("Error: google_creds.json not found!", Brushes.Red);
+                        AppendText($"Error: {creds} not found!", Brushes.Red, false);
                         return;
                     }
 
@@ -236,6 +358,8 @@ namespace VoiceFlowCS
             _accumulated = "";
             _currentBest = "";
             _interimRun = null;
+            _settingsService.Settings.ChatHistory.Clear();
+            _settingsService.SaveSettings();
         }
 
         /// <summary>Clears only the session buffer (text queued for Gemini), not the chat history.</summary>
@@ -332,6 +456,13 @@ namespace VoiceFlowCS
         {
             try
             {
+                // Save current selections
+                _settingsService.Settings.SelectedDeviceId = (DeviceComboBox.SelectedItem as AudioDevice)?.Id ?? "";
+                _settingsService.Settings.SelectedMicId = (MicComboBox.SelectedItem as AudioDevice)?.Id ?? "";
+                _settingsService.Settings.DefaultLanguage = (LanguageComboBox.SelectedItem as ComboBoxItem)?.Tag as string ?? "pl-PL";
+                _settingsService.Settings.MixMic = MixMicCheckBox.IsChecked == true;
+                _settingsService.SaveSettings();
+
                 if (_isActive)
                 {
                     // Stop audio capture and transcription services
@@ -423,6 +554,7 @@ namespace VoiceFlowCS
                 Run? currentAiRun = null;
                 await Dispatcher.InvokeAsync(() =>
                 {
+                    AiStatusIndicator.Fill = Brushes.MediumPurple;
                     // Insert Gemini label before the interim run (keeps interim at bottom)
                     var labelRun = new Run("\n🤖 Gemini: ") { Foreground = Brushes.MediumPurple };
                     currentAiRun = new Run { Foreground = Brushes.MediumPurple };
@@ -456,6 +588,7 @@ namespace VoiceFlowCS
                     // Final scroll after stream completes
                     await Dispatcher.InvokeAsync(() =>
                     {
+                        AiStatusIndicator.Fill = Brushes.Gray;
                         ChatScroll.UpdateLayout();
                         ChatScroll.ScrollToEnd();
                     });
@@ -465,6 +598,7 @@ namespace VoiceFlowCS
                     Log.Error(ex, "AI Stream error");
                     await Dispatcher.InvokeAsync(() =>
                     {
+                        AiStatusIndicator.Fill = Brushes.Red;
                         if (currentAiRun != null) currentAiRun.Text += $"\n[Error: {ex.Message}]";
                         ChatScroll.UpdateLayout();
                         ChatScroll.ScrollToEnd();
@@ -473,7 +607,7 @@ namespace VoiceFlowCS
             });
         }
 
-        private void AppendText(string text, Brush color)
+        private void AppendText(string text, Brush color, bool saveToHistory = true)
         {
             // Prepend a newline so every message starts on its own line
             var run = new Run("\n" + text) { Foreground = color };
@@ -486,6 +620,27 @@ namespace VoiceFlowCS
                 MainParagraph.Inlines.Add(run);
             }
             ChatScroll.ScrollToEnd();
+
+            if (saveToHistory)
+            {
+                string role = "System";
+                string content = text;
+                if (text.StartsWith("You: ")) { role = "You"; content = text.Substring(5); }
+                else if (text.StartsWith("✏️ Ty: ")) { role = "You"; content = text.Substring(7); }
+                else if (text.StartsWith("🤖 Gemini: ")) { role = "Gemini"; content = text.Substring(11); }
+                else if (text.StartsWith("📝 Zapytanie:\n")) { role = "Query"; content = text.Substring(14); }
+
+                _settingsService.Settings.ChatHistory.Add(new ChatMessage
+                {
+                    Role = role,
+                    Content = content,
+                    Color = color.ToString(),
+                    Timestamp = DateTime.Now
+                });
+                // Keep history reasonable
+                if (_settingsService.Settings.ChatHistory.Count > 100)
+                    _settingsService.Settings.ChatHistory.RemoveAt(0);
+            }
         }
     }
 }
